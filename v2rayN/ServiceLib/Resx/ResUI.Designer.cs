@@ -3104,7 +3104,25 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("TbPorts7Tips", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Custom Local Port 的本地化字符串。
+        /// </summary>
+        public static string TbCustomLocalPort {
+            get {
+                return ResourceManager.GetString("TbCustomLocalPort", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Custom local proxy port for this profile (0 or empty = use default) 的本地化字符串。
+        /// </summary>
+        public static string TbCustomLocalPortTips {
+            get {
+                return ResourceManager.GetString("TbCustomLocalPortTips", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Socks port 的本地化字符串。
         /// </summary>
