@@ -2,19 +2,21 @@ namespace ServiceLib.Services.CoreConfig;
 
 public partial class CoreConfigV2rayService
 {
-    private async Task<int> GenInbounds(V2rayConfig v2rayConfig)
+    private async Task<int> GenInbounds(V2rayConfig v2rayConfig, ProfileItem? node = null)
     {
         try
         {
             var listen = "0.0.0.0";
             v2rayConfig.inbounds = [];
 
-            var inbound = GetInbound(_config.Inbound.First(), EInboundProtocol.socks, true);
+            // Check if node has a custom local port configured
+            int? customPort = node?.CustomLocalPort;
+            var inbound = GetInbound(_config.Inbound.First(), EInboundProtocol.socks, true, customPort);
             v2rayConfig.inbounds.Add(inbound);
 
             if (_config.Inbound.First().SecondLocalPortEnabled)
             {
-                var inbound2 = GetInbound(_config.Inbound.First(), EInboundProtocol.socks2, true);
+                var inbound2 = GetInbound(_config.Inbound.First(), EInboundProtocol.socks2, true, customPort);
                 v2rayConfig.inbounds.Add(inbound2);
             }
 
@@ -22,7 +24,7 @@ public partial class CoreConfigV2rayService
             {
                 if (_config.Inbound.First().NewPort4LAN)
                 {
-                    var inbound3 = GetInbound(_config.Inbound.First(), EInboundProtocol.socks3, true);
+                    var inbound3 = GetInbound(_config.Inbound.First(), EInboundProtocol.socks3, true, customPort);
                     inbound3.listen = listen;
                     v2rayConfig.inbounds.Add(inbound3);
 
@@ -46,7 +48,7 @@ public partial class CoreConfigV2rayService
         return await Task.FromResult(0);
     }
 
-    private Inbounds4Ray GetInbound(InItem inItem, EInboundProtocol protocol, bool bSocks)
+    private Inbounds4Ray GetInbound(InItem inItem, EInboundProtocol protocol, bool bSocks, int? customPort = null)
     {
         var result = EmbedUtils.GetEmbedText(Global.V2raySampleInbound);
         if (result.IsNullOrEmpty())
@@ -60,7 +62,11 @@ public partial class CoreConfigV2rayService
             return new();
         }
         inbound.tag = protocol.ToString();
-        inbound.port = inItem.LocalPort + (int)protocol;
+
+        // Use custom port if specified and valid, otherwise use default
+        int basePort = (customPort.HasValue && customPort.Value > 0) ? customPort.Value : inItem.LocalPort;
+        inbound.port = basePort + (int)protocol;
+
         inbound.protocol = EInboundProtocol.mixed.ToString();
         inbound.settings.udp = inItem.UdpEnabled;
         inbound.sniffing.enabled = inItem.SniffingEnabled;

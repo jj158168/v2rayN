@@ -55,7 +55,7 @@ public partial class CoreConfigV2rayService(Config config)
 
             await GenLog(v2rayConfig);
 
-            await GenInbounds(v2rayConfig);
+            await GenInbounds(v2rayConfig, node);
 
             await GenOutbound(node, v2rayConfig.outbounds.First());
 

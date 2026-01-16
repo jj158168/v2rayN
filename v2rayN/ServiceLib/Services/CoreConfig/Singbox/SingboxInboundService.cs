@@ -2,12 +2,18 @@ namespace ServiceLib.Services.CoreConfig;
 
 public partial class CoreConfigSingboxService
 {
-    private async Task<int> GenInbounds(SingboxConfig singboxConfig)
+    private async Task<int> GenInbounds(SingboxConfig singboxConfig, ProfileItem? node = null)
     {
         try
         {
             var listen = "0.0.0.0";
             singboxConfig.inbounds = [];
+
+            // Check if node has a custom local port configured
+            int? customPort = node?.CustomLocalPort;
+            int basePort = (customPort.HasValue && customPort.Value > 0)
+                ? customPort.Value
+                : AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
 
             if (!_config.TunModeItem.EnableTun
                 || (_config.TunModeItem.EnableTun && _config.TunModeItem.EnableExInbound && AppManager.Instance.RunningCoreType == ECoreType.sing_box))
@@ -20,7 +26,7 @@ public partial class CoreConfigSingboxService
                 };
                 singboxConfig.inbounds.Add(inbound);
 
-                inbound.listen_port = AppManager.Instance.GetLocalPort(EInboundProtocol.socks);
+                inbound.listen_port = basePort;
 
                 if (_config.Inbound.First().SecondLocalPortEnabled)
                 {

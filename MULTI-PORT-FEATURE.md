@@ -16,10 +16,16 @@ This fork adds the ability to assign different local proxy ports to different no
 - [x] Added UI controls for custom local port in both Windows (WPF) and Desktop (Avalonia) versions
 - [x] Added localization strings for Chinese and English
 - [x] GitHub Actions workflows for upstream monitoring and building
+- [x] Modified `CoreConfigV2rayService` to use custom local port from profile
+- [x] Modified `CoreConfigSingboxService` to use custom local port from profile
 
-### Pending (Requires Core Architecture Changes)
-- [ ] Modify `CoreConfigV2rayService` to generate multiple inbounds based on active profiles
-- [ ] Modify `CoreConfigSingboxService` for the same functionality
+### How It Works
+When you configure a `CustomLocalPort` for a profile:
+1. The proxy will listen on the specified port instead of the default port
+2. If `CustomLocalPort` is 0 or empty, the default port from settings is used
+3. This allows different profiles to use different local ports
+
+### Future Enhancements (Optional)
 - [ ] Implement multi-core instance management for simultaneous proxy connections
 - [ ] Add profile activation/deactivation controls in the main UI
 

@@ -54,7 +54,7 @@ public partial class CoreConfigSingboxService(Config config)
 
             await GenLog(singboxConfig);
 
-            await GenInbounds(singboxConfig);
+            await GenInbounds(singboxConfig, node);
 
             if (node.ConfigType == EConfigType.WireGuard)
             {
