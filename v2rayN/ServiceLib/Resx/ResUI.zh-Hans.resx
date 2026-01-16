@@ -1374,6 +1374,12 @@
   <data name="TbPorts7Tips" xml:space="preserve">
     <value>会覆盖端口，多组时用逗号 (,) 隔开</value>
   </data>
+  <data name="TbCustomLocalPort" xml:space="preserve">
+    <value>自定义本地端口</value>
+  </data>
+  <data name="TbCustomLocalPortTips" xml:space="preserve">
+    <value>此节点的自定义本地代理端口 (0或空 = 使用默认端口)</value>
+  </data>
   <data name="menuGenGroupMultipleServer" xml:space="preserve">
     <value>多选生成策略组</value>
   </data>

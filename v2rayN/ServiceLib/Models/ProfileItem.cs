@@ -163,4 +163,10 @@ public class ProfileItem : ReactiveObject
     public string Cert { get; set; }
     public string EchConfigList { get; set; }
     public string EchForceQuery { get; set; }
+
+    /// <summary>
+    /// Custom local proxy port for this profile (multi-port feature)
+    /// If null or 0, uses the default local port from settings
+    /// </summary>
+    public int? CustomLocalPort { get; set; }
 }

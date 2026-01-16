@@ -111,6 +111,7 @@ public partial class AddServerWindow
             this.Bind(ViewModel, vm => vm.SelectedSource.Remarks, v => v.txtRemarks.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.SelectedSource.Address, v => v.txtAddress.Text).DisposeWith(disposables);
             this.Bind(ViewModel, vm => vm.SelectedSource.Port, v => v.txtPort.Text).DisposeWith(disposables);
+            this.Bind(ViewModel, vm => vm.SelectedSource.CustomLocalPort, v => v.txtCustomLocalPort.Text).DisposeWith(disposables);
 
             switch (profileItem.ConfigType)
             {

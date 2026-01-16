@@ -9,6 +9,20 @@ This fork adds the ability to assign different local proxy ports to different no
 - Route different applications through different nodes
 - Test multiple nodes at the same time
 
+## Current Implementation Status
+
+### Completed
+- [x] Added `CustomLocalPort` property to `ProfileItem` model
+- [x] Added UI controls for custom local port in both Windows (WPF) and Desktop (Avalonia) versions
+- [x] Added localization strings for Chinese and English
+- [x] GitHub Actions workflows for upstream monitoring and building
+
+### Pending (Requires Core Architecture Changes)
+- [ ] Modify `CoreConfigV2rayService` to generate multiple inbounds based on active profiles
+- [ ] Modify `CoreConfigSingboxService` for the same functionality
+- [ ] Implement multi-core instance management for simultaneous proxy connections
+- [ ] Add profile activation/deactivation controls in the main UI
+
 ## Workflow Overview
 
 ### Automatic Upstream Monitoring

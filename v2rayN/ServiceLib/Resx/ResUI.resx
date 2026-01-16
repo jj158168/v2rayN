@@ -1377,6 +1377,12 @@
   <data name="TbPorts7Tips" xml:space="preserve">
     <value>Will cover the port, separate with commas (,)</value>
   </data>
+  <data name="TbCustomLocalPort" xml:space="preserve">
+    <value>Custom Local Port</value>
+  </data>
+  <data name="TbCustomLocalPortTips" xml:space="preserve">
+    <value>Custom local proxy port for this profile (0 or empty = use default)</value>
+  </data>
   <data name="menuGenGroupMultipleServer" xml:space="preserve">
     <value>Generate Policy Group from Multiple Profiles</value>
   </data>

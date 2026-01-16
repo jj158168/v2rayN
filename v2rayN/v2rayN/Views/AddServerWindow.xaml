@@ -68,6 +68,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="300" />
@@ -138,6 +139,37 @@
                         Margin="{StaticResource Margin4}"
                         HorizontalAlignment="Left"
                         Style="{StaticResource DefTextBox}" />
+
+                    <TextBlock
+                        Grid.Row="3"
+                        Grid.Column="2"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource ToolbarTextBlock}"
+                        Text="{x:Static resx:ResUI.TbCustomLocalPort}" />
+                    <TextBox
+                        x:Name="txtCustomLocalPort"
+                        Grid.Row="4"
+                        Grid.Column="1"
+                        Width="200"
+                        Margin="{StaticResource Margin4}"
+                        HorizontalAlignment="Left"
+                        materialDesign:HintAssist.Hint="0"
+                        Style="{StaticResource DefTextBox}" />
+                    <TextBlock
+                        Grid.Row="4"
+                        Grid.Column="0"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource ToolbarTextBlock}"
+                        Text="{x:Static resx:ResUI.TbCustomLocalPort}" />
+                    <TextBlock
+                        Grid.Row="4"
+                        Grid.Column="2"
+                        Margin="{StaticResource Margin4}"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource ToolbarTextBlock}"
+                        Text="{x:Static resx:ResUI.TbCustomLocalPortTips}" />
                 </Grid>
 
                 <Separator
