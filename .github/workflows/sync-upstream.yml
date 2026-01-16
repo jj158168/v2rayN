@@ -1,0 +1,143 @@
+name: Sync Upstream
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: 'Upstream tag to sync (leave empty for latest)'
+        required: false
+        type: string
+      create_pr:
+        description: 'Create PR instead of direct merge'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/2dust/v2rayN.git || true
+          git fetch upstream --tags
+
+      - name: Get target tag
+        id: target
+        run: |
+          if [ -n "${{ inputs.upstream_tag }}" ]; then
+            TAG="${{ inputs.upstream_tag }}"
+          else
+            TAG=$(curl -s https://api.github.com/repos/2dust/v2rayN/releases/latest | jq -r '.tag_name')
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Target tag: $TAG"
+
+      - name: Create sync branch
+        run: |
+          BRANCH_NAME="sync/upstream-${{ steps.target.outputs.tag }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+        id: branch
+
+      - name: Merge upstream tag
+        id: merge
+        run: |
+          TAG="${{ steps.target.outputs.tag }}"
+
+          # 尝试合并
+          if git merge "upstream/$TAG" --no-edit -m "Merge upstream $TAG"; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "Merge successful"
+          else
+            echo "status=conflict" >> $GITHUB_OUTPUT
+            echo "Merge has conflicts"
+
+            # 列出冲突文件
+            git diff --name-only --diff-filter=U > /tmp/conflicts.txt
+            echo "Conflicted files:"
+            cat /tmp/conflicts.txt
+          fi
+
+      - name: Push sync branch
+        if: steps.merge.outputs.status == 'success' || steps.merge.outputs.status == 'conflict'
+        run: |
+          BRANCH_NAME="sync/upstream-${{ steps.target.outputs.tag }}"
+
+          if [ "${{ steps.merge.outputs.status }}" == "conflict" ]; then
+            # 如果有冲突，中止合并并提交信息
+            git merge --abort
+            echo "Merge aborted due to conflicts. Manual resolution required."
+          fi
+
+          git push origin "$BRANCH_NAME" --force || true
+
+      - name: Create Pull Request
+        if: inputs.create_pr && steps.merge.outputs.status == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.target.outputs.tag }}';
+            const branch = 'sync/upstream-' + tag;
+
+            try {
+              const pr = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🔄 Sync upstream ${tag}`,
+                body: `## Sync Upstream Release\n\n` +
+                      `This PR merges upstream release **${tag}** into master.\n\n` +
+                      `### Checklist\n` +
+                      `- [ ] Multi-port feature still works\n` +
+                      `- [ ] Build passes on all platforms\n` +
+                      `- [ ] No regression in existing functionality\n\n` +
+                      `[View upstream release](https://github.com/2dust/v2rayN/releases/tag/${tag})`,
+                head: branch,
+                base: 'master'
+              });
+              console.log(`PR created: ${pr.data.html_url}`);
+            } catch (error) {
+              console.log('Failed to create PR:', error.message);
+            }
+
+      - name: Report conflict
+        if: steps.merge.outputs.status == 'conflict'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.target.outputs.tag }}';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ Merge conflict with upstream ${tag}`,
+              body: `## Merge Conflict Detected\n\n` +
+                    `Automatic merge of upstream **${tag}** failed due to conflicts.\n\n` +
+                    `### Manual Resolution Required\n` +
+                    `\`\`\`bash\n` +
+                    `git fetch upstream --tags\n` +
+                    `git checkout -b sync/upstream-${tag}\n` +
+                    `git merge upstream/${tag}\n` +
+                    `# Resolve conflicts manually\n` +
+                    `git add .\n` +
+                    `git commit\n` +
+                    `git push origin sync/upstream-${tag}\n` +
+                    `\`\`\`\n\n` +
+                    `After resolving conflicts, create a PR from \`sync/upstream-${tag}\` to \`master\`.`,
+              labels: ['upstream-sync', 'conflict', 'help wanted']
+            });

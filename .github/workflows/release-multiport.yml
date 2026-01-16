@@ -1,0 +1,160 @@
+name: Release Multi-Port Version
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g., 7.17.0-multiport)'
+        required: true
+        type: string
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            echo "value=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ inputs.release_tag }}" >> $GITHUB_OUTPUT
+          fi
+
+  build-windows:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build Windows x64
+        run: |
+          cd v2rayN
+          dotnet publish ./v2rayN/v2rayN.csproj -c Release -r win-x64 --self-contained -o ../publish/win-x64
+          dotnet publish ./AmazTool/AmazTool.csproj -c Release -r win-x64 -p:PublishTrimmed=true --self-contained -o ../publish/win-x64
+
+      - name: Build Windows arm64
+        run: |
+          cd v2rayN
+          dotnet publish ./v2rayN/v2rayN.csproj -c Release -r win-arm64 --self-contained -o ../publish/win-arm64
+          dotnet publish ./AmazTool/AmazTool.csproj -c Release -r win-arm64 -p:PublishTrimmed=true --self-contained -o ../publish/win-arm64
+
+      - name: Package
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          cd publish
+          zip -r "../v2rayN-windows-x64-${TAG}.zip" win-x64
+          zip -r "../v2rayN-windows-arm64-${TAG}.zip" win-arm64
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-builds
+          path: "*.zip"
+
+  build-linux:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build Linux x64
+        run: |
+          cd v2rayN
+          dotnet publish ./v2rayN.Desktop/v2rayN.Desktop.csproj -c Release -r linux-x64 --self-contained -o ../publish/linux-x64
+          dotnet publish ./AmazTool/AmazTool.csproj -c Release -r linux-x64 -p:PublishTrimmed=true --self-contained -o ../publish/linux-x64
+
+      - name: Build Linux arm64
+        run: |
+          cd v2rayN
+          dotnet publish ./v2rayN.Desktop/v2rayN.Desktop.csproj -c Release -r linux-arm64 --self-contained -o ../publish/linux-arm64
+          dotnet publish ./AmazTool/AmazTool.csproj -c Release -r linux-arm64 -p:PublishTrimmed=true --self-contained -o ../publish/linux-arm64
+
+      - name: Package
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          cd publish
+          tar -czvf "../v2rayN-linux-x64-${TAG}.tar.gz" linux-x64
+          tar -czvf "../v2rayN-linux-arm64-${TAG}.tar.gz" linux-arm64
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: "*.tar.gz"
+
+  build-macos:
+    needs: prepare
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build macOS x64
+        run: |
+          cd v2rayN
+          dotnet publish ./v2rayN.Desktop/v2rayN.Desktop.csproj -c Release -r osx-x64 --self-contained -o ../publish/osx-x64
+          dotnet publish ./AmazTool/AmazTool.csproj -c Release -r osx-x64 -p:PublishTrimmed=true --self-contained -o ../publish/osx-x64
+
+      - name: Build macOS arm64
+        run: |
+          cd v2rayN
+          dotnet publish ./v2rayN.Desktop/v2rayN.Desktop.csproj -c Release -r osx-arm64 --self-contained -o ../publish/osx-arm64
+          dotnet publish ./AmazTool/AmazTool.csproj -c Release -r osx-arm64 -p:PublishTrimmed=true --self-contained -o ../publish/osx-arm64
+
+      - name: Package
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          cd publish
+          zip -r "../v2rayN-macos-x64-${TAG}.zip" osx-x64
+          zip -r "../v2rayN-macos-arm64-${TAG}.zip" osx-arm64
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-builds
+          path: "*.zip"
+
+  upload-release:
+    needs: [prepare, build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la artifacts/
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
