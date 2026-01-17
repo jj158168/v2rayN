@@ -126,6 +126,23 @@
                             Header="{x:Static resx:ResUI.menuSetDefaultServer}"
                             InputGestureText="Enter" />
                         <MenuItem
+                            x:Name="menuStartNode"
+                            Height="{StaticResource MenuItemHeight}"
+                            Header="{x:Static resx:ResUI.menuStartNode}" />
+                        <MenuItem
+                            x:Name="menuStopNode"
+                            Height="{StaticResource MenuItemHeight}"
+                            Header="{x:Static resx:ResUI.menuStopNode}" />
+                        <MenuItem
+                            x:Name="menuStartSelectedNodes"
+                            Height="{StaticResource MenuItemHeight}"
+                            Header="{x:Static resx:ResUI.menuStartSelectedNodes}" />
+                        <MenuItem
+                            x:Name="menuStopSelectedNodes"
+                            Height="{StaticResource MenuItemHeight}"
+                            Header="{x:Static resx:ResUI.menuStopSelectedNodes}" />
+                        <Separator />
+                        <MenuItem
                             x:Name="menuEditServer"
                             Height="{StaticResource MenuItemHeight}"
                             Header="{x:Static resx:ResUI.menuEditServer}"
@@ -289,6 +306,11 @@
                 </DataGrid.Resources>
                 <DataGrid.Columns>
                     <base:MyDGTextColumn
+                        Width="60"
+                        Binding="{Binding RunningStatus}"
+                        ExName="RunningStatus"
+                        Header="{x:Static resx:ResUI.LvRunningStatus}" />
+                    <base:MyDGTextColumn
                         Width="80"
                         Binding="{Binding ConfigType}"
                         ExName="ConfigType"
@@ -308,6 +330,11 @@
                         Binding="{Binding Port}"
                         ExName="Port"
                         Header="{x:Static resx:ResUI.LvPort}" />
+                    <base:MyDGTextColumn
+                        Width="80"
+                        Binding="{Binding LocalPortDisplay}"
+                        ExName="LocalPortDisplay"
+                        Header="{x:Static resx:ResUI.LvLocalPort}" />
                     <base:MyDGTextColumn
                         Width="100"
                         Binding="{Binding Network}"

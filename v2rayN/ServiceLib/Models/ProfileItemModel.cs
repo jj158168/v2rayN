@@ -6,6 +6,24 @@ public class ProfileItemModel : ProfileItem
     public bool IsActive { get; set; }
     public string SubRemarks { get; set; }
 
+    /// <summary>
+    /// Whether this profile is currently running (multi-port feature)
+    /// </summary>
+    [Reactive]
+    public bool IsRunning { get; set; }
+
+    /// <summary>
+    /// Display text for running status
+    /// </summary>
+    [Reactive]
+    public string RunningStatus { get; set; }
+
+    /// <summary>
+    /// Display text for local proxy port
+    /// </summary>
+    [Reactive]
+    public string LocalPortDisplay { get; set; }
+
     [Reactive]
     public int Delay { get; set; }
 

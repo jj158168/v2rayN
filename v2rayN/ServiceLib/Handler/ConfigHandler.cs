@@ -255,6 +255,7 @@ public static class ConfigHandler
             item.Cert = profileItem.Cert;
             item.EchConfigList = profileItem.EchConfigList;
             item.EchForceQuery = profileItem.EchForceQuery;
+            item.CustomLocalPort = profileItem.CustomLocalPort;
         }
 
         var ret = item.ConfigType switch

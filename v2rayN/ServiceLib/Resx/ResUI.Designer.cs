@@ -581,7 +581,25 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("LvServiceType", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Status 的本地化字符串。
+        /// </summary>
+        public static string LvRunningStatus {
+            get {
+                return ResourceManager.GetString("LvRunningStatus", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Local Port 的本地化字符串。
+        /// </summary>
+        public static string LvLocalPort {
+            get {
+                return ResourceManager.GetString("LvLocalPort", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Sort 的本地化字符串。
         /// </summary>
@@ -1697,7 +1715,43 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("menuSetDefaultServer", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Start this node 的本地化字符串。
+        /// </summary>
+        public static string menuStartNode {
+            get {
+                return ResourceManager.GetString("menuStartNode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Stop this node 的本地化字符串。
+        /// </summary>
+        public static string menuStopNode {
+            get {
+                return ResourceManager.GetString("menuStopNode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Start selected nodes 的本地化字符串。
+        /// </summary>
+        public static string menuStartSelectedNodes {
+            get {
+                return ResourceManager.GetString("menuStartSelectedNodes", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Stop selected nodes 的本地化字符串。
+        /// </summary>
+        public static string menuStopSelectedNodes {
+            get {
+                return ResourceManager.GetString("menuStopSelectedNodes", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Settings 的本地化字符串。
         /// </summary>
@@ -4463,7 +4517,25 @@ namespace ServiceLib.Resx {
                 return ResourceManager.GetString("TipActiveServer", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Running 的本地化字符串。
+        /// </summary>
+        public static string TipRunning {
+            get {
+                return ResourceManager.GetString("TipRunning", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Stopped 的本地化字符串。
+        /// </summary>
+        public static string TipStopped {
+            get {
+                return ResourceManager.GetString("TipStopped", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Routing setting has changed 的本地化字符串。
         /// </summary>

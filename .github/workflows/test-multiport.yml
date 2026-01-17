@@ -1,0 +1,166 @@
+name: Test Multi-Port Feature
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'v2rayN/**'
+      - '.github/workflows/test-multiport.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'v2rayN/**'
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            project: v2rayN.Desktop
+            rid: linux-x64
+          - os: windows-latest
+            project: v2rayN
+            rid: win-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore v2rayN/${{ matrix.project }}/${{ matrix.project }}.csproj
+
+      - name: Build
+        run: dotnet build v2rayN/${{ matrix.project }}/${{ matrix.project }}.csproj -c Release --no-restore
+
+      - name: Verify Multi-Port Feature Files
+        shell: bash
+        run: |
+          echo "=== Verifying Multi-Port Feature Implementation ==="
+
+          # 检查 MultiCoreManager 是否存在
+          if [ -f "v2rayN/ServiceLib/Manager/MultiCoreManager.cs" ]; then
+            echo "✅ MultiCoreManager.cs exists"
+          else
+            echo "❌ MultiCoreManager.cs not found"
+            exit 1
+          fi
+
+          # 检查 ProfileItem 是否包含 CustomLocalPort
+          if grep -q "CustomLocalPort" "v2rayN/ServiceLib/Models/ProfileItem.cs"; then
+            echo "✅ CustomLocalPort property exists in ProfileItem"
+          else
+            echo "❌ CustomLocalPort property not found in ProfileItem"
+            exit 1
+          fi
+
+          # 检查 ProfileItemModel 是否包含运行状态属性
+          if grep -q "RunningStatus" "v2rayN/ServiceLib/Models/ProfileItemModel.cs"; then
+            echo "✅ RunningStatus property exists in ProfileItemModel"
+          else
+            echo "❌ RunningStatus property not found in ProfileItemModel"
+            exit 1
+          fi
+
+          # 检查 V2rayInboundService 是否支持 CustomLocalPort
+          if grep -q "CustomLocalPort" "v2rayN/ServiceLib/Services/CoreConfig/V2ray/V2rayInboundService.cs"; then
+            echo "✅ V2rayInboundService supports CustomLocalPort"
+          else
+            echo "❌ V2rayInboundService does not support CustomLocalPort"
+            exit 1
+          fi
+
+          # 检查 SingboxInboundService 是否支持 CustomLocalPort
+          if grep -q "CustomLocalPort" "v2rayN/ServiceLib/Services/CoreConfig/Singbox/SingboxInboundService.cs"; then
+            echo "✅ SingboxInboundService supports CustomLocalPort"
+          else
+            echo "❌ SingboxInboundService does not support CustomLocalPort"
+            exit 1
+          fi
+
+          # 检查本地化字符串
+          if grep -q "LvRunningStatus" "v2rayN/ServiceLib/Resx/ResUI.resx"; then
+            echo "✅ Localization strings exist"
+          else
+            echo "❌ Localization strings not found"
+            exit 1
+          fi
+
+          # 检查 ConfigHandler 是否保存 CustomLocalPort
+          if grep -q "item.CustomLocalPort = profileItem.CustomLocalPort" "v2rayN/ServiceLib/Handler/ConfigHandler.cs"; then
+            echo "✅ ConfigHandler saves CustomLocalPort"
+          else
+            echo "❌ ConfigHandler does not save CustomLocalPort"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== All Multi-Port Feature Checks Passed ==="
+
+      - name: Publish Test
+        run: |
+          dotnet publish v2rayN/${{ matrix.project }}/${{ matrix.project }}.csproj -c Release -r ${{ matrix.rid }} --self-contained false -o publish/${{ matrix.rid }}
+
+      - name: Verify Published Files
+        shell: bash
+        run: |
+          echo "=== Published Files ==="
+          ls -la publish/${{ matrix.rid }}/
+
+          # 验证主程序文件存在
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            if [ -f "publish/${{ matrix.rid }}/v2rayN.exe" ]; then
+              echo "✅ v2rayN.exe exists"
+            else
+              echo "❌ v2rayN.exe not found"
+              exit 1
+            fi
+          else
+            if [ -f "publish/${{ matrix.rid }}/v2rayN" ]; then
+              echo "✅ v2rayN binary exists"
+            else
+              echo "❌ v2rayN binary not found"
+              exit 1
+            fi
+          fi
+
+  code-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore v2rayN/ServiceLib/ServiceLib.csproj
+
+      - name: Check for common issues
+        shell: bash
+        run: |
+          echo "=== Code Analysis ==="
+
+          # 检查是否有调试代码遗留
+          if grep -r "Console.WriteLine" v2rayN/ServiceLib/Manager/MultiCoreManager.cs 2>/dev/null; then
+            echo "⚠️ Warning: Console.WriteLine found in MultiCoreManager.cs"
+          fi
+
+          # 检查是否有 TODO 注释
+          TODO_COUNT=$(grep -r "TODO" v2rayN/ServiceLib/Manager/MultiCoreManager.cs 2>/dev/null | wc -l || echo "0")
+          if [ "$TODO_COUNT" -gt 0 ]; then
+            echo "⚠️ Warning: $TODO_COUNT TODO comments found in MultiCoreManager.cs"
+          fi
+
+          echo "✅ Code analysis completed"

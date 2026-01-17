@@ -132,4 +132,30 @@ public static class CoreConfigHandler
         await File.WriteAllTextAsync(fileName, result.Data.ToString());
         return result;
     }
+
+    /// <summary>
+    /// Generate a simplified config for multi-node running (no routing rules)
+    /// Each node acts as an independent proxy server
+    /// </summary>
+    public static async Task<RetResult> GenerateClientMultiNodeConfig(Config config, ProfileItem node, int localPort, string fileName)
+    {
+        var result = new RetResult();
+
+        if (AppManager.Instance.GetCoreType(node, node.ConfigType) == ECoreType.sing_box)
+        {
+            result = await new CoreConfigSingboxService(config).GenerateClientSpeedtestConfig(node, localPort);
+        }
+        else
+        {
+            result = await new CoreConfigV2rayService(config).GenerateClientSpeedtestConfig(node, localPort);
+        }
+
+        if (result.Success != true)
+        {
+            return result;
+        }
+
+        await File.WriteAllTextAsync(fileName, result.Data.ToString());
+        return result;
+    }
 }

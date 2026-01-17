@@ -186,6 +186,30 @@
   <data name="LvServiceType" xml:space="preserve">
     <value>类型</value>
   </data>
+  <data name="LvRunningStatus" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="LvLocalPort" xml:space="preserve">
+    <value>本地端口</value>
+  </data>
+  <data name="TipRunning" xml:space="preserve">
+    <value>运行中</value>
+  </data>
+  <data name="TipStopped" xml:space="preserve">
+    <value>已停止</value>
+  </data>
+  <data name="menuStartNode" xml:space="preserve">
+    <value>启动此节点</value>
+  </data>
+  <data name="menuStopNode" xml:space="preserve">
+    <value>停止此节点</value>
+  </data>
+  <data name="menuStartSelectedNodes" xml:space="preserve">
+    <value>批量启动选中节点</value>
+  </data>
+  <data name="menuStopSelectedNodes" xml:space="preserve">
+    <value>批量停止选中节点</value>
+  </data>
   <data name="LvSubscription" xml:space="preserve">
     <value>订阅分组</value>
   </data>

@@ -60,6 +60,12 @@ public partial class ProfilesView : ReactiveUserControl<ProfilesViewModel>
             this.BindCommand(ViewModel, vm => vm.CopyServerCmd, v => v.menuCopyServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.SetDefaultServerCmd, v => v.menuSetDefaultServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.ShareServerCmd, v => v.menuShareServer).DisposeWith(disposables);
+
+            //multi-node running
+            this.BindCommand(ViewModel, vm => vm.StartNodeCmd, v => v.menuStartNode).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.StopNodeCmd, v => v.menuStopNode).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.StartSelectedNodesCmd, v => v.menuStartSelectedNodes).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.StopSelectedNodesCmd, v => v.menuStopSelectedNodes).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.GenGroupMultipleServerXrayRandomCmd, v => v.menuGenGroupMultipleServerXrayRandom).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.GenGroupMultipleServerXrayRoundRobinCmd, v => v.menuGenGroupMultipleServerXrayRoundRobin).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.GenGroupMultipleServerXrayLeastPingCmd, v => v.menuGenGroupMultipleServerXrayLeastPing).DisposeWith(disposables);

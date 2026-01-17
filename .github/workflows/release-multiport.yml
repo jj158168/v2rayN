@@ -10,12 +10,46 @@ on:
         required: true
         type: string
 
+env:
+  DOTNET_VERSION: '8.0.x'
+
 jobs:
+  # 运行测试
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Verify Multi-Port Feature
+        run: |
+          echo "=== Verifying Multi-Port Feature ==="
+
+          # 检查关键文件
+          test -f "v2rayN/ServiceLib/Manager/MultiCoreManager.cs" || exit 1
+          grep -q "CustomLocalPort" "v2rayN/ServiceLib/Models/ProfileItem.cs" || exit 1
+          grep -q "RunningStatus" "v2rayN/ServiceLib/Models/ProfileItemModel.cs" || exit 1
+
+          echo "✅ All feature checks passed"
+
   prepare:
+    needs: test
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.value }}
+      version: ${{ steps.version.outputs.value }}
+      upstream_version: ${{ steps.version.outputs.upstream }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Determine tag
         id: tag
         run: |
@@ -25,9 +59,25 @@ jobs:
             echo "value=${{ inputs.release_tag }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Extract version info
+        id: version
+        run: |
+          TAG="${{ steps.tag.outputs.value }}"
+          # 提取版本号 (去除 -multiport 后缀)
+          VERSION=$(echo "$TAG" | sed 's/-multiport$//')
+          echo "value=$VERSION" >> $GITHUB_OUTPUT
+
+          # 获取上游版本
+          UPSTREAM=$(echo "$VERSION" | sed 's/^v//')
+          echo "upstream=$UPSTREAM" >> $GITHUB_OUTPUT
+
+          echo "Tag: $TAG"
+          echo "Version: $VERSION"
+          echo "Upstream: $UPSTREAM"
+
   build-windows:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,13 +85,19 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Build Windows x64
         run: |
           cd v2rayN
           dotnet publish ./v2rayN/v2rayN.csproj -c Release -r win-x64 --self-contained -o ../publish/win-x64
           dotnet publish ./AmazTool/AmazTool.csproj -c Release -r win-x64 -p:PublishTrimmed=true --self-contained -o ../publish/win-x64
+
+      - name: Build Windows x86
+        run: |
+          cd v2rayN
+          dotnet publish ./v2rayN/v2rayN.csproj -c Release -r win-x86 --self-contained -o ../publish/win-x86
+          dotnet publish ./AmazTool/AmazTool.csproj -c Release -r win-x86 -p:PublishTrimmed=true --self-contained -o ../publish/win-x86
 
       - name: Build Windows arm64
         run: |
@@ -51,10 +107,11 @@ jobs:
 
       - name: Package
         run: |
-          TAG="${{ needs.prepare.outputs.tag }}"
+          $TAG = "${{ needs.prepare.outputs.tag }}"
           cd publish
-          zip -r "../v2rayN-windows-x64-${TAG}.zip" win-x64
-          zip -r "../v2rayN-windows-arm64-${TAG}.zip" win-arm64
+          Compress-Archive -Path win-x64\* -DestinationPath "..\v2rayN-windows-x64-${TAG}.zip"
+          Compress-Archive -Path win-x86\* -DestinationPath "..\v2rayN-windows-x86-${TAG}.zip"
+          Compress-Archive -Path win-arm64\* -DestinationPath "..\v2rayN-windows-arm64-${TAG}.zip"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -72,7 +129,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Build Linux x64
         run: |
@@ -109,7 +166,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Build macOS x64
         run: |
@@ -142,6 +199,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -149,12 +209,77 @@ jobs:
           merge-multiple: true
 
       - name: List artifacts
-        run: ls -la artifacts/
+        run: |
+          echo "=== Release Artifacts ==="
+          ls -la artifacts/
+          echo ""
+          echo "=== File Sizes ==="
+          du -h artifacts/*
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          VERSION="${{ needs.prepare.outputs.version }}"
+          UPSTREAM="${{ needs.prepare.outputs.upstream_version }}"
+
+          cat > release_notes.md << 'EOF'
+          ## v2rayN Multi-Port Edition
+
+          基于 [v2rayN](https://github.com/2dust/v2rayN) 官方版本 `$VERSION` 修改，添加多节点同时运行功能。
+
+          ### ✨ 新增功能
+
+          - **多节点同时运行**: 支持同时启动多个代理节点，每个节点使用独立的本地端口
+          - **自定义本地端口**: 可为每个节点单独设置本地监听端口
+          - **运行状态显示**: 在服务器列表中显示每个节点的运行状态和本地端口
+          - **右键菜单操作**: 通过右键菜单快速启动/停止单个节点
+
+          ### 📦 下载说明
+
+          | 平台 | 架构 | 文件 |
+          |------|------|------|
+          | Windows | x64 | `v2rayN-windows-x64-$TAG.zip` |
+          | Windows | x86 | `v2rayN-windows-x86-$TAG.zip` |
+          | Windows | ARM64 | `v2rayN-windows-arm64-$TAG.zip` |
+          | Linux | x64 | `v2rayN-linux-x64-$TAG.tar.gz` |
+          | Linux | ARM64 | `v2rayN-linux-arm64-$TAG.tar.gz` |
+          | macOS | x64 (Intel) | `v2rayN-macos-x64-$TAG.zip` |
+          | macOS | ARM64 (Apple Silicon) | `v2rayN-macos-arm64-$TAG.zip` |
+
+          ### 🔧 使用方法
+
+          1. **设置自定义端口**: 编辑服务器 → 填写"自定义本地端口"
+          2. **启动节点**: 右键点击服务器 → 选择"启动节点"
+          3. **停止节点**: 右键点击服务器 → 选择"停止节点"
+          4. **查看状态**: "状态"列显示运行状态，"本地端口"列显示监听端口
+
+          ### ⚠️ 注意事项
+
+          - 确保为每个同时运行的节点设置不同的本地端口
+          - 如果未设置自定义端口，系统会自动分配可用端口
+          - 多节点功能与主节点（系统代理）相互独立
+
+          ### 🔗 相关链接
+
+          - [上游版本 v$UPSTREAM](https://github.com/2dust/v2rayN/releases/tag/$VERSION)
+          - [问题反馈](../../issues)
+
+          ---
+
+          > 此版本自动构建于 GitHub Actions
+          EOF
+
+          # 替换变量
+          sed -i "s/\$TAG/$TAG/g" release_notes.md
+          sed -i "s/\$VERSION/$VERSION/g" release_notes.md
+          sed -i "s/\$UPSTREAM/$UPSTREAM/g" release_notes.md
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
+          body_path: release_notes.md
           files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

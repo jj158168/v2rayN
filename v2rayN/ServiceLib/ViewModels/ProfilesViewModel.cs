@@ -80,6 +80,12 @@ public class ProfilesViewModel : MyReactiveObject
     public ReactiveCommand<Unit, Unit> EditSubCmd { get; }
     public ReactiveCommand<Unit, Unit> DeleteSubCmd { get; }
 
+    //multi-node running
+    public ReactiveCommand<Unit, Unit> StartNodeCmd { get; }
+    public ReactiveCommand<Unit, Unit> StopNodeCmd { get; }
+    public ReactiveCommand<Unit, Unit> StartSelectedNodesCmd { get; }
+    public ReactiveCommand<Unit, Unit> StopSelectedNodesCmd { get; }
+
     #endregion Menu
 
     #region Init
@@ -246,6 +252,24 @@ public class ProfilesViewModel : MyReactiveObject
             await DeleteSubAsync();
         });
 
+        //Multi-node running
+        StartNodeCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await StartNodeAsync();
+        }, canEditRemove);
+        StopNodeCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await StopNodeAsync();
+        }, canEditRemove);
+        StartSelectedNodesCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await StartSelectedNodesAsync();
+        });
+        StopSelectedNodesCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await StopSelectedNodesAsync();
+        });
+
         #endregion WhenAnyValue && ReactiveCommand
 
         #region AppEvents
@@ -281,8 +305,27 @@ public class ProfilesViewModel : MyReactiveObject
         SelectedSub = new();
         SelectedMoveToGroup = new();
 
+        // Initialize MultiCoreManager
+        await MultiCoreManager.Instance.Init(_config, null);
+        MultiCoreManager.Instance.OnNodeStatusChanged += OnNodeStatusChanged;
+
         await RefreshSubscriptions();
         //await RefreshServers();
+    }
+
+    private void OnNodeStatusChanged(string indexId, bool isRunning, int localPort)
+    {
+        RxApp.MainThreadScheduler.Schedule((indexId, isRunning, localPort), (scheduler, state) =>
+        {
+            var item = ProfileItems.FirstOrDefault(it => it.IndexId == state.indexId);
+            if (item != null)
+            {
+                item.IsRunning = state.isRunning;
+                item.RunningStatus = state.isRunning ? ResUI.TipRunning : ResUI.TipStopped;
+                item.LocalPortDisplay = state.isRunning ? state.localPort.ToString() : string.Empty;
+            }
+            return Disposable.Empty;
+        });
     }
 
     #endregion Init
@@ -439,6 +482,8 @@ public class ProfilesViewModel : MyReactiveObject
                     from t22 in t2b.DefaultIfEmpty()
                     join t3 in lstProfileExs on t.IndexId equals t3.IndexId into t3b
                     from t33 in t3b.DefaultIfEmpty()
+                    let isRunning = MultiCoreManager.Instance.IsNodeRunning(t.IndexId)
+                    let localPort = MultiCoreManager.Instance.GetNodeLocalPort(t.IndexId)
                     select new ProfileItemModel
                     {
                         IndexId = t.IndexId,
@@ -452,6 +497,9 @@ public class ProfilesViewModel : MyReactiveObject
                         Subid = t.Subid,
                         SubRemarks = t.SubRemarks,
                         IsActive = t.IndexId == _config.IndexId,
+                        IsRunning = isRunning,
+                        RunningStatus = isRunning ? ResUI.TipRunning : string.Empty,
+                        LocalPortDisplay = localPort.HasValue ? localPort.Value.ToString() : (t.CustomLocalPort > 0 ? t.CustomLocalPort.ToString() : string.Empty),
                         Sort = t33?.Sort ?? 0,
                         Delay = t33?.Delay ?? 0,
                         Speed = t33?.Speed ?? 0,
@@ -913,4 +961,121 @@ public class ProfilesViewModel : MyReactiveObject
     }
 
     #endregion Subscription
+
+    #region Multi-Node Running
+
+    public async Task StartNodeAsync()
+    {
+        if (string.IsNullOrEmpty(SelectedProfile?.IndexId))
+        {
+            return;
+        }
+
+        var item = await AppManager.Instance.GetProfileItem(SelectedProfile.IndexId);
+        if (item is null)
+        {
+            NoticeManager.Instance.Enqueue(ResUI.PleaseSelectServer);
+            return;
+        }
+
+        // Check if already running
+        if (MultiCoreManager.Instance.IsNodeRunning(item.IndexId))
+        {
+            NoticeManager.Instance.Enqueue($"Node is already running");
+            return;
+        }
+
+        var result = await MultiCoreManager.Instance.StartNode(item);
+        if (result)
+        {
+            NoticeManager.Instance.Enqueue(ResUI.OperationSuccess);
+        }
+        else
+        {
+            NoticeManager.Instance.Enqueue(ResUI.OperationFailed);
+        }
+    }
+
+    public async Task StopNodeAsync()
+    {
+        if (string.IsNullOrEmpty(SelectedProfile?.IndexId))
+        {
+            return;
+        }
+
+        // Check if running
+        if (!MultiCoreManager.Instance.IsNodeRunning(SelectedProfile.IndexId))
+        {
+            NoticeManager.Instance.Enqueue($"Node is not running");
+            return;
+        }
+
+        var result = await MultiCoreManager.Instance.StopNode(SelectedProfile.IndexId);
+        if (result)
+        {
+            NoticeManager.Instance.Enqueue(ResUI.OperationSuccess);
+        }
+        else
+        {
+            NoticeManager.Instance.Enqueue(ResUI.OperationFailed);
+        }
+    }
+
+    public async Task StartSelectedNodesAsync()
+    {
+        var selectedItems = SelectedProfiles;
+        if (selectedItems == null || selectedItems.Count == 0)
+        {
+            NoticeManager.Instance.Enqueue(ResUI.PleaseSelectServer);
+            return;
+        }
+
+        var nodes = new List<ProfileItem>();
+        foreach (var profile in selectedItems)
+        {
+            if (!MultiCoreManager.Instance.IsNodeRunning(profile.IndexId))
+            {
+                var item = await AppManager.Instance.GetProfileItem(profile.IndexId);
+                if (item != null)
+                {
+                    nodes.Add(item);
+                }
+            }
+        }
+
+        if (nodes.Count == 0)
+        {
+            NoticeManager.Instance.Enqueue("All selected nodes are already running");
+            return;
+        }
+
+        var (success, failed) = await MultiCoreManager.Instance.StartNodes(nodes);
+        NoticeManager.Instance.Enqueue($"Started {success} nodes, {failed} failed");
+    }
+
+    public async Task StopSelectedNodesAsync()
+    {
+        var selectedItems = SelectedProfiles;
+        if (selectedItems == null || selectedItems.Count == 0)
+        {
+            NoticeManager.Instance.Enqueue(ResUI.PleaseSelectServer);
+            return;
+        }
+
+        var indexIds = selectedItems
+            .Where(p => MultiCoreManager.Instance.IsNodeRunning(p.IndexId))
+            .Select(p => p.IndexId)
+            .ToList();
+
+        if (indexIds.Count == 0)
+        {
+            NoticeManager.Instance.Enqueue("No selected nodes are running");
+            return;
+        }
+
+        var (success, failed) = await MultiCoreManager.Instance.StopNodes(indexIds);
+        NoticeManager.Instance.Enqueue($"Stopped {success} nodes, {failed} failed");
+    }
+
+    #endregion Multi-Node Running
 }

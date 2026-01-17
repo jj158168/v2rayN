@@ -14,6 +14,9 @@ public class AddServerViewModel : MyReactiveObject
     [Reactive]
     public string CertTip { get; set; }
 
+    [Reactive]
+    public string CustomLocalPortText { get; set; }
+
     public ReactiveCommand<Unit, Unit> FetchCertCmd { get; }
     public ReactiveCommand<Unit, Unit> FetchCertChainCmd { get; }
     public ReactiveCommand<Unit, Unit> SaveCmd { get; }
@@ -53,6 +56,7 @@ public class AddServerViewModel : MyReactiveObject
         }
         CoreType = SelectedSource?.CoreType?.ToString();
         Cert = SelectedSource?.Cert?.ToString() ?? string.Empty;
+        CustomLocalPortText = SelectedSource?.CustomLocalPort?.ToString() ?? string.Empty;
     }
 
     private async Task SaveServerAsync()
@@ -98,6 +102,20 @@ public class AddServerViewModel : MyReactiveObject
         }
         SelectedSource.CoreType = CoreType.IsNullOrEmpty() ? null : (ECoreType)Enum.Parse(typeof(ECoreType), CoreType);
         SelectedSource.Cert = Cert.IsNullOrEmpty() ? null : Cert;
+
+        // Convert custom local port text to int
+        if (CustomLocalPortText.IsNullOrEmpty())
+        {
+            SelectedSource.CustomLocalPort = null;
+        }
+        else if (int.TryParse(CustomLocalPortText, out var customPort) && customPort > 0 && customPort < Global.MaxPort)
+        {
+            SelectedSource.CustomLocalPort = customPort;
+        }
+        else
+        {
+            SelectedSource.CustomLocalPort = null;
+        }
 
         if (await ConfigHandler.AddServer(_config, SelectedSource) == 0)
         {

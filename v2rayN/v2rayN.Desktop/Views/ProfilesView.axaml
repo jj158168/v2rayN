@@ -117,6 +117,19 @@
                             Header="{x:Static resx:ResUI.menuSetDefaultServer}"
                             InputGesture="Enter" />
                         <MenuItem
+                            x:Name="menuStartNode"
+                            Header="{x:Static resx:ResUI.menuStartNode}" />
+                        <MenuItem
+                            x:Name="menuStopNode"
+                            Header="{x:Static resx:ResUI.menuStopNode}" />
+                        <MenuItem
+                            x:Name="menuStartSelectedNodes"
+                            Header="{x:Static resx:ResUI.menuStartSelectedNodes}" />
+                        <MenuItem
+                            x:Name="menuStopSelectedNodes"
+                            Header="{x:Static resx:ResUI.menuStopSelectedNodes}" />
+                        <Separator />
+                        <MenuItem
                             x:Name="menuEditServer"
                             Header="{x:Static resx:ResUI.menuEditServer}"
                             InputGesture="Ctrl+D" />
@@ -207,6 +220,11 @@
 
                 <DataGrid.Columns>
                     <DataGridTextColumn
+                        Width="60"
+                        Binding="{Binding RunningStatus}"
+                        Header="{x:Static resx:ResUI.LvRunningStatus}"
+                        Tag="RunningStatus" />
+                    <DataGridTextColumn
                         Width="80"
                         Binding="{Binding ConfigType}"
                         Header="{x:Static resx:ResUI.LvServiceType}"
@@ -244,6 +262,11 @@
                         Binding="{Binding Port}"
                         Header="{x:Static resx:ResUI.LvPort}"
                         Tag="Port" />
+                    <DataGridTextColumn
+                        Width="80"
+                        Binding="{Binding LocalPortDisplay}"
+                        Header="{x:Static resx:ResUI.LvLocalPort}"
+                        Tag="LocalPortDisplay" />
                     <DataGridTextColumn
                         Width="100"
                         Binding="{Binding Network}"
