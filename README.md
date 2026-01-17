@@ -2,10 +2,10 @@
 
 基于 [v2rayN](https://github.com/2dust/v2rayN) 修改，添加多节点同时运行功能。
 
-[![Build Status](https://github.com/YOUR_USERNAME/v2rayN-fork/actions/workflows/test-multiport.yml/badge.svg)](https://github.com/YOUR_USERNAME/v2rayN-fork/actions)
-[![GitHub Releases](https://img.shields.io/github/downloads/YOUR_USERNAME/v2rayN-fork/latest/total?logo=github)](https://github.com/YOUR_USERNAME/v2rayN-fork/releases)
+[![Build Status](https://github.com/jj158168/v2rayN-fork/actions/workflows/test-multiport.yml/badge.svg)](https://github.com/YOUR_USERNAME/v2rayN-fork/actions)
+[![GitHub Releases](https://img.shields.io/github/downloads/jj158168/v2rayN-fork/latest/total?logo=github)](https://github.com/YOUR_USERNAME/v2rayN-fork/releases)
 
-> **Note**: 请将上面的 `YOUR_USERNAME` 替换为你的 GitHub 用户名
+
 
 ## ✨ 新增功能
 
